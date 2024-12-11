@@ -1,9 +1,9 @@
+from accelerate import Accelerator
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
-from accelerate import Accelerator
 
 # Initialize the Accelerator
 accelerator = Accelerator()
@@ -67,7 +67,9 @@ for epoch in range(epochs):
         optimizer.step()
         total_loss += loss.item()
 
-    print(f"Epoch {epoch + 1}/{epochs}, Loss: {total_loss / len(train_loader)}")
+    # Print loss on the main process only
+    if accelerator.is_main_process:
+        print(f"Epoch {epoch + 1}/{epochs}, Loss: {total_loss / len(train_loader)}")
 
 # Evaluation
 model.eval()
@@ -80,4 +82,6 @@ with torch.no_grad():
         total += labels.size(0)
         correct += (predicted == labels).sum().item()
 
-print(f"Accuracy: {100 * correct / total:.2f}%")
+# Print accuracy only on the main process
+if accelerator.is_main_process:
+    print(f"Accuracy: {100 * correct / total:.2f}%")
